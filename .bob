@@ -1,0 +1,11 @@
+bob 1.0
+
+filters {
+	glob-file *.go
+	exact-file .bob
+	:reqd :not exact-process bot.exe
+}
+
+step Build {
+	run go1.18beta2 build -o bin/bot.exe
+}
