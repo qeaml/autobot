@@ -7,7 +7,7 @@ autobot is a somewhat advanced Discord bot written in Go using [discordgo](githu
 * A command system split into three types of commands:
   * **Internal commands**, defined in the bot's source code.
   * **Simple commands**, defined using the bot itself. Simply replace all occuernces of `%s` in the command's string with arguments that the command was executed with. (e.g. a simple command called `gotcha` defined as `haha! i got your %s!` will turn into `haha! i got your nose!` when executed as `$gotcha nose`)
-  * **Complex commands**, defined using Lua code. The bot has a somewhat extensive API for this Lua VM that allows it to create some pretty cool stuff without having to hardcore it into the bot. Examples of complex commands can be (eventually) found in the `ccc` directory.
+  * **Complex commands**, defined using Lua code. The bot has a somewhat extensive API for this Lua VM that allows it to create some pretty cool stuff without having to hardcore it into the bot. Examples of complex commands can be found in the `ccc` directory.
 
 * A simple text generation algorithm which learns on every message that the bot receives. It can use the data it gathered to generate text using the `!generate` internal command.
 
