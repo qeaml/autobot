@@ -167,13 +167,17 @@ func handleMessage(discord *discordgo.Session, msg *discordgo.Message) {
 		if ok {
 			c(discord, msg, args)
 		}
-	} else {
-		model.TrainString(msg)
-	}
-
-	if strings.HasPrefix(msg.Content, discord.State.User.Mention()) {
+	} else if strings.HasPrefix(msg.Content, discord.State.User.Mention()) {
 		txt := msg.Author.Mention() + model.Generate("", 5+rand.Intn(10))
 		discord.ChannelMessageSend(msg.ChannelID, txt)
+	} else {
+		model.TrainString(msg)
+		if rand.Intn(11) == 5 {
+			discord.ChannelMessageSendReply(
+				msg.ChannelID,
+				model.Generate("", 5+rand.Intn(10)),
+				msg.MessageReference)
+		}
 	}
 }
 
