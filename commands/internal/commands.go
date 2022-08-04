@@ -7,10 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/qeaml/autobot/model"
+	"github.com/qeaml/autobot/quotes"
 	"github.com/qeaml/autobot/shared"
 
 	"github.com/bwmarrin/discordgo"
@@ -313,5 +315,72 @@ func sortUsageMap(m map[string]uint64, l int) map[string]uint64 {
 func Uptime(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 	sh.ChannelMessageSend(msg.ChannelID, "I've been runing for "+
 		time.Since(shared.Start).Round(time.Second).String())
+	return nil
+}
+
+func Quote(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
+	if len(quotes.Quotes) == 0 {
+		sh.ChannelMessageSend(msg.ChannelID,
+			"There are no quotes.")
+		return nil
+	}
+
+	var who string
+	var num uint
+	preamble := "Random quote from a random person:"
+	if len(args) >= 2 {
+		who = args[1]
+		preamble = "Random quote from **" + who + "**:"
+	}
+	if len(args) >= 3 {
+		num64, err := strconv.ParseUint(args[2], 10, 32)
+		if err != nil || num64 < 1 {
+			sh.ChannelMessageSend(msg.ChannelID,
+				"Provide a valid quote number (1+)")
+			return nil
+		}
+		num = uint(num64)
+		preamble = "Quote **#" + args[2] + "** from **" + who + "**:"
+	}
+	num -= 1
+
+	if who == "" {
+		people := []string{}
+		for p := range quotes.Quotes {
+			people = append(people, p)
+		}
+		who = people[rand.Intn(len(people))]
+	}
+	var q string
+	var ok bool
+	if num != 0 {
+		q, ok = quotes.Get(who, int(num))
+	} else {
+		q, ok = quotes.GetRandom(who)
+	}
+	if !ok {
+		sh.ChannelMessageSend(msg.ChannelID,
+			"Could not find quote.")
+		return nil
+	}
+
+	sh.ChannelMessageSend(msg.ChannelID,
+		preamble+"\n"+"*“"+q+"”*")
+	return nil
+}
+
+func AddQuote(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
+	if msg.Author.ID != shared.Config.Admin {
+		return nil
+	}
+	if msg.ReferencedMessage == nil {
+		return nil
+	}
+	if len(args) < 2 {
+		return nil
+	}
+	num := quotes.Add(args[1], msg.ReferencedMessage.ContentWithMentionsReplaced())
+	sh.ChannelMessageSend(msg.ChannelID,
+		fmt.Sprintf("Added quote %d", num))
 	return nil
 }

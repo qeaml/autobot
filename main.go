@@ -12,6 +12,7 @@ import (
 	"github.com/qeaml/autobot/commands"
 	"github.com/qeaml/autobot/commands/cmplx"
 	"github.com/qeaml/autobot/model"
+	"github.com/qeaml/autobot/quotes"
 	"github.com/qeaml/autobot/shared"
 
 	"github.com/bwmarrin/discordgo"
@@ -62,6 +63,13 @@ func main() {
 		return
 	}
 
+	log("Loading quotes")
+	err = quotes.Load()
+	if err != nil {
+		log("error loading quotes: " + err.Error())
+		return
+	}
+
 	log("Reading config...")
 	cf, err := os.OpenFile("config.yml", os.O_RDONLY|os.O_CREATE, os.ModePerm)
 	if err != nil {
@@ -101,6 +109,10 @@ func main() {
 
 	log("Disconnecting discord...")
 	if err = discord.Close(); err != nil {
+		fmt.Printf("\nerror: %s\n", err.Error())
+	}
+	log("Saving quotes...")
+	if err = quotes.Save(); err != nil {
 		fmt.Printf("\nerror: %s\n", err.Error())
 	}
 	log("Saving model...")
@@ -176,7 +188,7 @@ func handleMessage(discord *discordgo.Session, msg *discordgo.Message) {
 			discord.ChannelMessageSendReply(
 				msg.ChannelID,
 				model.Generate("", 5+rand.Intn(10)),
-				msg.MessageReference)
+				msg.Reference())
 		}
 	}
 }
