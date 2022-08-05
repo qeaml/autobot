@@ -1,4 +1,4 @@
-package quotes
+package shared
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 
 var Quotes = map[string][]string{}
 
-func Load() (err error) {
+func LoadQuotes() (err error) {
 	f, err := os.Open("quotes.json")
 	if errors.Is(err, fs.ErrNotExist) {
 		f, err = os.Create("quotes.json")
@@ -34,7 +34,7 @@ func Load() (err error) {
 	return
 }
 
-func Save() (err error) {
+func SaveQuotes() (err error) {
 	f, err := os.Create("quotes.json")
 	if err != nil {
 		return
@@ -45,7 +45,7 @@ func Save() (err error) {
 	return
 }
 
-func Add(who, quote string) uint {
+func AddQuote(who, quote string) uint {
 	quotelist, ok := Quotes[who]
 	if !ok {
 		quotelist = []string{}

@@ -12,7 +12,6 @@ import (
 	"github.com/qeaml/autobot/commands"
 	"github.com/qeaml/autobot/commands/cmplx"
 	"github.com/qeaml/autobot/model"
-	"github.com/qeaml/autobot/quotes"
 	"github.com/qeaml/autobot/shared"
 
 	"github.com/bwmarrin/discordgo"
@@ -64,7 +63,7 @@ func main() {
 	}
 
 	log("Loading quotes")
-	err = quotes.Load()
+	err = shared.LoadQuotes()
 	if err != nil {
 		log("error loading quotes: " + err.Error())
 		return
@@ -123,7 +122,7 @@ func main() {
 		fmt.Printf("\nerror: %s\n", err.Error())
 	}
 	log("Saving quotes...")
-	if err = quotes.Save(); err != nil {
+	if err = shared.SaveQuotes(); err != nil {
 		fmt.Printf("\nerror: %s\n", err.Error())
 	}
 	log("Saving model...")

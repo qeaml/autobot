@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/qeaml/autobot/model"
-	"github.com/qeaml/autobot/quotes"
 	"github.com/qeaml/autobot/shared"
 
 	"github.com/bwmarrin/discordgo"
@@ -319,9 +318,9 @@ func Uptime(sh *discordgo.Session, msg *discordgo.Message, args []string) error 
 }
 
 func Quote(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
-	if len(quotes.Quotes) == 0 {
+	if len(shared.Quotes) == 0 {
 		sh.ChannelMessageSend(msg.ChannelID,
-			"There are no quotes.")
+			"There are no shared.")
 		return nil
 	}
 
@@ -340,16 +339,16 @@ func Quote(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 	}
 
 	if who == "" {
-		persons := make([]string, len(quotes.Quotes))
+		persons := make([]string, len(shared.Quotes))
 		i := 0
-		for p := range quotes.Quotes {
+		for p := range shared.Quotes {
 			persons[i] = p
 			i++
 		}
 		who = persons[rand.Intn(len(persons))]
 	}
 
-	qlist, ok := quotes.Quotes[who]
+	qlist, ok := shared.Quotes[who]
 	if !ok {
 		sh.ChannelMessageSend(msg.ChannelID, "Could not find quote")
 		return nil
@@ -374,7 +373,7 @@ func AddQuote(sh *discordgo.Session, msg *discordgo.Message, args []string) erro
 	if len(args) < 2 {
 		return nil
 	}
-	num := quotes.Add(args[1], msg.ReferencedMessage.ContentWithMentionsReplaced())
+	num := shared.AddQuote(args[1], msg.ReferencedMessage.ContentWithMentionsReplaced())
 	sh.ChannelMessageSend(msg.ChannelID,
 		fmt.Sprintf("Added quote %d", num))
 	return nil
