@@ -325,47 +325,42 @@ func Quote(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 		return nil
 	}
 
-	var who string
-	var num uint
-	preamble := "Random quote from a random person:"
+	who := ""
+	num := 0
 	if len(args) >= 2 {
 		who = args[1]
-		preamble = "Random quote from **" + who + "**:"
 	}
 	if len(args) >= 3 {
 		num64, err := strconv.ParseUint(args[2], 10, 32)
-		if err != nil || num64 < 1 {
-			sh.ChannelMessageSend(msg.ChannelID,
-				"Provide a valid quote number (1+)")
+		if err != nil || num64 == 0 {
+			sh.ChannelMessageSend(msg.ChannelID, "Provide a valid quote number (1+)")
 			return nil
 		}
-		num = uint(num64)
-		preamble = "Quote **#" + args[2] + "** from **" + who + "**:"
+		num = int(num64 - 1)
 	}
-	num -= 1
 
 	if who == "" {
-		people := []string{}
+		persons := make([]string, len(quotes.Quotes))
+		i := 0
 		for p := range quotes.Quotes {
-			people = append(people, p)
+			persons[i] = p
+			i++
 		}
-		who = people[rand.Intn(len(people))]
+		who = persons[rand.Intn(len(persons))]
 	}
-	var q string
-	var ok bool
-	if num != 0 {
-		q, ok = quotes.Get(who, int(num))
-	} else {
-		q, ok = quotes.GetRandom(who)
-	}
+
+	qlist, ok := quotes.Quotes[who]
 	if !ok {
-		sh.ChannelMessageSend(msg.ChannelID,
-			"Could not find quote.")
+		sh.ChannelMessageSend(msg.ChannelID, "Could not find quote")
 		return nil
 	}
 
+	if num == 0 {
+		num = rand.Intn(len(qlist))
+	}
+
 	sh.ChannelMessageSend(msg.ChannelID,
-		preamble+"\n"+"*“"+q+"”*")
+		fmt.Sprintf("Quote **#%d** from **%s**:\n*“%s”*", num+1, who, qlist[num]))
 	return nil
 }
 

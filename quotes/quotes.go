@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
-	"math/rand"
 	"os"
 )
 
@@ -54,27 +53,4 @@ func Add(who, quote string) uint {
 	quotelist = append(quotelist, quote)
 	Quotes[who] = quotelist
 	return uint(len(quotelist))
-}
-
-func Get(who string, num int) (q string, ok bool) {
-	quotelist, ok := Quotes[who]
-	if !ok {
-		return
-	}
-	i := num - 1
-	if i >= len(quotelist) || i <= 0 {
-		ok = false
-		return
-	}
-	q = quotelist[i]
-	return
-}
-
-func GetRandom(who string) (q string, ok bool) {
-	quotelist, ok := Quotes[who]
-	if !ok {
-		return
-	}
-	q = quotelist[rand.Intn(len(quotelist))]
-	return
 }
