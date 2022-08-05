@@ -379,3 +379,12 @@ func AddQuote(sh *discordgo.Session, msg *discordgo.Message, args []string) erro
 		fmt.Sprintf("Added quote %d", num))
 	return nil
 }
+
+func WTF(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
+	if len(args) >= 2 && args[1] == "+" {
+		shared.WTF++
+	}
+	sh.ChannelMessageSend(msg.ChannelID,
+		fmt.Sprintf("WTF moments: **%d**", shared.WTF))
+	return nil
+}

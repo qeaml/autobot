@@ -25,6 +25,7 @@ func LoadInternal() error {
 		"uptime":   internal.Uptime,
 		"quote":    internal.Quote,
 		"addquote": internal.AddQuote,
+		"wtf":      internal.WTF,
 	}
 	return nil
 }
@@ -43,6 +44,7 @@ var internalDesc = map[string]string{
 	"uptime":   "Check the bot's uptime",
 	"quote":    "View a quote",
 	"addquote": "Add a quote (admin only)",
+	"wtf":      "View the WTF moment count or add another WTF moment",
 }
 
 func Commands(sh *discordgo.Session, msg *discordgo.Message, args []string) error {

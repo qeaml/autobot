@@ -70,6 +70,13 @@ func main() {
 		return
 	}
 
+	log("Loading WTF")
+	err = shared.LoadWTF()
+	if err != nil {
+		log("error loading WTF: " + err.Error())
+		return
+	}
+
 	log("Reading config...")
 	cf, err := os.OpenFile("config.yml", os.O_RDONLY|os.O_CREATE, os.ModePerm)
 	if err != nil {
@@ -109,6 +116,10 @@ func main() {
 
 	log("Disconnecting discord...")
 	if err = discord.Close(); err != nil {
+		fmt.Printf("\nerror: %s\n", err.Error())
+	}
+	log("Saving WTF...")
+	if err = shared.SaveWTF(); err != nil {
 		fmt.Printf("\nerror: %s\n", err.Error())
 	}
 	log("Saving quotes...")
@@ -189,6 +200,12 @@ func handleMessage(discord *discordgo.Session, msg *discordgo.Message) {
 				msg.ChannelID,
 				model.Generate("", 5+rand.Intn(10)),
 				msg.Reference())
+		}
+		lower := strings.ToLower(msg.Content)
+		if strings.Contains(lower, "wtf") || strings.Contains(lower, "what the fuck") {
+			shared.WTF++
+			discord.ChannelMessageSend(msg.ChannelID,
+				fmt.Sprintf("WTF moments: %d", shared.WTF))
 		}
 	}
 }
