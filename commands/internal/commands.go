@@ -71,6 +71,7 @@ func RunC(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 	if strings.HasSuffix(src, "```") {
 		src = strings.TrimSpace(src[:len(src)-3])
 	}
+	shared.PushLog("Writing source code to file...")
 	cFile, err := os.Create("run.c")
 	if err != nil {
 		return err
@@ -83,6 +84,7 @@ func RunC(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 	if err != nil {
 		return err
 	}
+	shared.SwapLog("Compiling...")
 	gccOut := strings.Builder{}
 	gcc := exec.Command("gcc", "-Os", "-Wall", "-Wpedantic", "-o", "run.exe", "run.c")
 	gcc.Stdout = &gccOut
@@ -93,10 +95,12 @@ func RunC(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 			txt := fmt.Sprintf(
 				"**Compilation failed.**\n```\n%s\n```", gccOut.String())
 			sh.ChannelMessageSend(msg.ChannelID, txt)
+			shared.PopLog()
 			return nil
 		}
 		return err
 	}
+	shared.SwapLog("Running...")
 	runOut := strings.Builder{}
 	run := exec.Command(".\\run.exe")
 	run.Stdout = &runOut
@@ -107,16 +111,19 @@ func RunC(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 			txt := fmt.Sprintf(
 				"**Execution failed. (code %x)**\n```c\n%s\n```", ex.ExitCode(), runOut.String())
 			sh.ChannelMessageSend(msg.ChannelID, txt)
+			shared.PopLog()
 			return nil
 		}
 		return err
 	}
+	shared.SwapLog("Sending results...")
 	result := runOut.String()
 	if len(result) == 0 {
 		sh.ChannelMessageSend(msg.ChannelID, "**Result empty.**")
 	} else {
 		sh.ChannelMessageSend(msg.ChannelID, runOut.String())
 	}
+	shared.PopLog()
 	return nil
 }
 
@@ -139,6 +146,7 @@ func RunPy(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 	if strings.HasSuffix(src, "```") {
 		src = strings.TrimSpace(src[:len(src)-3])
 	}
+	shared.PushLog("Writing source code to file...")
 	pyFile, err := os.Create("run.py")
 	if err != nil {
 		return err
@@ -151,6 +159,7 @@ func RunPy(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 	if err != nil {
 		return err
 	}
+	shared.SwapLog("Running...")
 	runOut := strings.Builder{}
 	run := exec.Command("py", "run.py")
 	run.Stdout = &runOut
@@ -161,16 +170,19 @@ func RunPy(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 			txt := fmt.Sprintf(
 				"**Execution failed. (code %x)**\n```py\n%s\n```", ex.ExitCode(), runOut.String())
 			sh.ChannelMessageSend(msg.ChannelID, txt)
+			shared.PopLog()
 			return nil
 		}
 		return err
 	}
+	shared.SwapLog("Sending results...")
 	result := runOut.String()
 	if len(result) == 0 {
 		sh.ChannelMessageSend(msg.ChannelID, "**Result empty.**")
 	} else {
 		sh.ChannelMessageSend(msg.ChannelID, runOut.String())
 	}
+	shared.PopLog()
 	return nil
 }
 
