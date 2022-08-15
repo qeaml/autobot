@@ -56,50 +56,68 @@ func Error(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 }
 
 func RunC(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
-	if len(args) < 2 {
-		sh.ChannelMessageSend(msg.ChannelID, "Provide code to run")
+	if len(args) < 3 {
+		sh.ChannelMessageSend(msg.ChannelID,
+			"Usage: !runc <compiler> <code...>")
 		return nil
 	}
+
 	sh.ChannelTyping(msg.ChannelID)
-	src := strings.TrimSpace(msg.Content[len(args[0])+1:])
-	if strings.HasPrefix(src, "```c") {
-		src = strings.TrimSpace(src[4:])
-	}
-	if strings.HasPrefix(src, "```") {
-		src = strings.TrimSpace(src[3:])
-	}
-	if strings.HasSuffix(src, "```") {
-		src = strings.TrimSpace(src[:len(src)-3])
-	}
-	shared.PushLog("Writing source code to file...")
-	cFile, err := os.Create("run.c")
+
+	compiler := args[1]
+
+	altArgs := strings.SplitN(msg.Content, " ", 3)
+	code := altArgs[2]
+
+	code = strings.TrimPrefix(code, "```c")
+	code = strings.TrimPrefix(code, "```")
+	code = strings.TrimSuffix(code, "```")
+
+	shared.PushLog("Saving source to file...")
+	f, err := os.Create("run.c")
 	if err != nil {
 		return err
 	}
-	_, err = cFile.WriteString(src)
+	_, err = f.WriteString(code)
 	if err != nil {
 		return err
 	}
-	err = cFile.Close()
+	err = f.Close()
 	if err != nil {
 		return err
 	}
+
 	shared.SwapLog("Compiling...")
-	gccOut := strings.Builder{}
-	gcc := exec.Command("gcc", "-Os", "-Wall", "-Wpedantic", "-o", "run.exe", "run.c")
-	gcc.Stdout = &gccOut
-	gcc.Stderr = &gccOut
-	err = gcc.Run()
+	var (
+		out     string
+		badCode bool
+	)
+	switch compiler {
+	case "gcc":
+		out, badCode, err = compileGCC()
+	case "clang":
+		out, badCode, err = compileClang()
+	case "cl":
+		out, badCode, err = compileCl(false)
+	case "cl-checked":
+		out, badCode, err = compileCl(true)
+	default:
+		sh.ChannelMessageSend(msg.ChannelID, fmt.Sprintf(
+			"Uknown compiler: %s", compiler))
+		shared.PopLog()
+		return nil
+	}
+	if badCode {
+		sh.ChannelMessageSend(msg.ChannelID, fmt.Sprintf(
+			"Could not compile:\n```c\n%s\n```",
+			out))
+		shared.PopLog()
+		return nil
+	}
 	if err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			txt := fmt.Sprintf(
-				"**Compilation failed.**\n```\n%s\n```", gccOut.String())
-			sh.ChannelMessageSend(msg.ChannelID, txt)
-			shared.PopLog()
-			return nil
-		}
 		return err
 	}
+
 	shared.SwapLog("Running...")
 	runOut := strings.Builder{}
 	run := exec.Command(".\\run.exe")
@@ -107,10 +125,10 @@ func RunC(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 	run.Stderr = &runOut
 	err = run.Run()
 	if err != nil {
-		if ex, ok := err.(*exec.ExitError); ok {
-			txt := fmt.Sprintf(
-				"**Execution failed. (code %x)**\n```c\n%s\n```", ex.ExitCode(), runOut.String())
-			sh.ChannelMessageSend(msg.ChannelID, txt)
+		if _, ok := err.(*exec.ExitError); ok {
+			sh.ChannelMessageSend(msg.ChannelID, fmt.Sprintf(
+				"An error occured trying to run your program:\n```c\n%s\n```",
+				runOut.String()))
 			shared.PopLog()
 			return nil
 		}
@@ -398,4 +416,53 @@ func WTF(sh *discordgo.Session, msg *discordgo.Message, args []string) error {
 	sh.ChannelMessageSend(msg.ChannelID,
 		fmt.Sprintf("WTF moments: **%d**", shared.WTF))
 	return nil
+}
+
+func compileGCC() (out string, badCode bool, err error) {
+	gccOut := strings.Builder{}
+	gcc := exec.Command("gcc", "-Wall", "-Wpedantic", "-o", "run.exe", "run.c")
+	gcc.Stdout = &gccOut
+	gcc.Stderr = &gccOut
+	err = gcc.Run()
+	if _, ok := err.(*exec.ExitError); ok {
+		out = gccOut.String()
+		badCode = true
+		err = nil
+		return
+	}
+	return
+}
+
+func compileClang() (out string, badCode bool, err error) {
+	clangOut := strings.Builder{}
+	clang := exec.Command("clang", "-Wall", "-Wpedantic", "-o", "run.exe", "run.c")
+	clang.Stdout = &clangOut
+	clang.Stderr = &clangOut
+	err = clang.Run()
+	if _, ok := err.(*exec.ExitError); ok {
+		out = clangOut.String()
+		badCode = true
+		err = nil
+		return
+	}
+	return
+}
+
+func compileCl(sanitize bool) (out string, badCode bool, err error) {
+	args := []string{"/W4", "/WX", "/Ferun.exe"}
+	if sanitize {
+		args = append(args, "/fsanitize=address", "/RTC1")
+	}
+	args = append(args, "run.c")
+	clOut := strings.Builder{}
+	cl := exec.Command("cl.exe", args...)
+	cl.Stderr = &clOut
+	err = cl.Run()
+	if _, ok := err.(*exec.ExitError); ok {
+		out = clOut.String()
+		badCode = true
+		err = nil
+		return
+	}
+	return
 }
